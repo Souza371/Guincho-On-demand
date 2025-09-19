@@ -1,0 +1,102 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: guincho_postgres
+    environment:
+      POSTGRES_DB: guincho_db
+      POSTGRES_USER: guincho_user
+      POSTGRES_PASSWORD: guincho_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./backend/database/init:/docker-entrypoint-initdb.d
+    networks:
+      - guincho_network
+
+  # Redis for caching and sessions
+  redis:
+    image: redis:7-alpine
+    container_name: guincho_redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - guincho_network
+
+  # Backend API
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: guincho_backend
+    environment:
+      NODE_ENV: development
+      DATABASE_URL: postgresql://guincho_user:guincho_password@postgres:5432/guincho_db
+      REDIS_URL: redis://redis:6379
+      JWT_SECRET: super-secret-jwt-key-for-development
+      JWT_REFRESH_SECRET: super-secret-refresh-key-for-development
+      PORT: 3000
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - guincho_network
+    command: npm run dev
+
+  # Web Admin Panel
+  web-admin:
+    build:
+      context: ./web-admin
+      dockerfile: Dockerfile
+    container_name: guincho_web_admin
+    environment:
+      REACT_APP_API_URL: http://localhost:3000/api
+      REACT_APP_ENVIRONMENT: development
+    ports:
+      - "3001:3000"
+    volumes:
+      - ./web-admin:/app
+      - /app/node_modules
+    depends_on:
+      - backend
+    networks:
+      - guincho_network
+    command: npm start
+
+  # pgAdmin for database management (development only)
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: guincho_pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@guincho.com
+      PGADMIN_DEFAULT_PASSWORD: admin123
+      PGADMIN_CONFIG_SERVER_MODE: 'False'
+    ports:
+      - "5050:80"
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    depends_on:
+      - postgres
+    networks:
+      - guincho_network
+    profiles:
+      - dev
+
+volumes:
+  postgres_data:
+  redis_data:
+  pgadmin_data:
+
+networks:
+  guincho_network:
+    driver: bridge
