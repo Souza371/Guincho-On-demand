@@ -6,6 +6,21 @@ const prisma = new PrismaClient();
 async function main() {
   console.log('🌱 Iniciando seed do banco de dados...');
 
+  // Limpar dados existentes
+  await prisma.rating.deleteMany();
+  await prisma.payment.deleteMany();
+  await prisma.rideProposal.deleteMany();
+  await prisma.ride.deleteMany();
+  await prisma.address.deleteMany();
+  await prisma.vehicleDocument.deleteMany();
+  await prisma.serviceArea.deleteMany();
+  await prisma.user.deleteMany();
+  await prisma.provider.deleteMany();
+  await prisma.subscriptionPlan.deleteMany();
+  await prisma.admin.deleteMany();
+
+  console.log('🧹 Dados existentes removidos...');
+
   // Criar planos de assinatura
   const basicPlan = await prisma.subscriptionPlan.create({
     data: {
@@ -254,23 +269,24 @@ async function main() {
   });
 
   // Criar avaliações
-  await prisma.rating.createMany({
-    data: [
-      {
-        rideId: ride1.id,
-        evaluatorId: user1.id, // usuário avalia o prestador
-        evaluatedId: provider1.id,
-        rating: 5,
-        comment: 'Excelente serviço! Muito rápido e eficiente.'
-      },
-      {
-        rideId: ride1.id,
-        evaluatorId: provider1.id, // prestador avalia o usuário
-        evaluatedId: user1.id,
-        rating: 5,
-        comment: 'Cliente muito educado e pontual.'
-      }
-    ]
+  await prisma.rating.create({
+    data: {
+      rideId: ride1.id,
+      evaluatorId: user1.id, // usuário avalia o prestador
+      evaluatedId: provider1.id,
+      rating: 5,
+      comment: 'Excelente serviço! Muito rápido e eficiente.'
+    }
+  });
+
+  await prisma.rating.create({
+    data: {
+      rideId: ride1.id,
+      evaluatorId: provider1.id, // prestador avalia o usuário
+      evaluatedId: user1.id,
+      rating: 5,
+      comment: 'Cliente muito educado e pontual.'
+    }
   });
 
   console.log('✅ Seed concluído com sucesso!');

@@ -26,8 +26,6 @@ model User {
   subscriptionPlan SubscriptionPlan? @relation(fields: [subscriptionPlanId], references: [id])
   addresses        Address[]
   rides            Ride[]
-  ratingsGiven     Rating[]          @relation("RatingsGiven")
-  ratingsReceived  Rating[]          @relation("RatingsReceived")
 
   @@map("users")
 }
@@ -54,8 +52,6 @@ model Provider {
   serviceAreas     ServiceArea[]
   rides            Ride[]
   proposals        RideProposal[]
-  ratingsGiven     Rating[]      @relation("ProviderRatingsGiven")
-  ratingsReceived  Rating[]      @relation("ProviderRatingsReceived")
 
   @@map("providers")
 }
@@ -178,11 +174,7 @@ model Rating {
   createdAt   DateTime @default(now()) @map("created_at")
 
   // Relacionamentos
-  ride            Ride      @relation(fields: [rideId], references: [id], onDelete: Cascade)
-  userEvaluator   User?     @relation("RatingsGiven", fields: [evaluatorId], references: [id], map: "ratings_user_evaluator_fkey")
-  userEvaluated   User?     @relation("RatingsReceived", fields: [evaluatedId], references: [id], map: "ratings_user_evaluated_fkey")
-  providerEvaluator Provider? @relation("ProviderRatingsGiven", fields: [evaluatorId], references: [id], map: "ratings_provider_evaluator_fkey")
-  providerEvaluated Provider? @relation("ProviderRatingsReceived", fields: [evaluatedId], references: [id], map: "ratings_provider_evaluated_fkey")
+  ride Ride @relation(fields: [rideId], references: [id], onDelete: Cascade)
 
   @@map("ratings")
 }
