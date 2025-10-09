@@ -42,11 +42,11 @@ function App() {
   const handleLogin = async (email: string, password: string) => {
     try {
       // Simulação de login por enquanto
-      if (email === 'admin@guincho.com' && password === '123456') {
+      if (email === 'vicentedesouza762@gmail.com' && password === 'Abacaxi371@') {
         const user: User = {
           id: '1',
-          name: 'Administrador',
-          email: 'admin@guincho.com',
+          name: 'Vicente de Souza',
+          email: 'vicentedesouza762@gmail.com',
           type: 'admin'
         };
         
