@@ -1,6 +1,13 @@
 import { Router } from 'express';
+import { AdminController } from '../controllers/adminController';
+import { authenticateToken, requireUserType } from '../middleware/auth';
 
 const router = Router();
+const adminController = new AdminController();
+
+// Aplicar autenticação e autorização a todas as rotas
+router.use(authenticateToken);
+router.use(requireUserType('admin'));
 
 // Rota de teste
 router.get('/test', (req, res) => {
@@ -11,12 +18,20 @@ router.get('/test', (req, res) => {
   });
 });
 
-// TODO: Implementar rotas administrativas
-// GET /api/admin/dashboard - Dashboard com estatísticas
-// GET /api/admin/users - Listar usuários
-// GET /api/admin/providers - Listar prestadores
-// PUT /api/admin/providers/:id/approve - Aprovar prestador
-// GET /api/admin/rides - Listar todas as corridas
-// GET /api/admin/reports - Relatórios
+// Dashboard
+router.get('/dashboard', adminController.getDashboard.bind(adminController));
+
+// Gestão de usuários
+router.get('/users', adminController.getUsers.bind(adminController));
+
+// Gestão de prestadores
+router.get('/providers', adminController.getProviders.bind(adminController));
+router.put('/providers/:providerId/approve', adminController.approveProvider.bind(adminController));
+
+// Gestão de corridas
+router.get('/rides', adminController.getRides.bind(adminController));
+
+// Relatórios
+router.get('/reports', adminController.getReports.bind(adminController));
 
 export { router as adminRoutes };
