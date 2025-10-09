@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import './styles/global.css';
 import './App.css';
 
 // Componentes
@@ -6,6 +7,10 @@ import Dashboard from './components/Dashboard';
 import Login from './components/Login';
 import Sidebar from './components/Sidebar';
 import Header from './components/Header';
+import Users from './components/Users';
+import Providers from './components/Providers';
+import Rides from './components/Rides';
+import Reports from './components/Reports';
 
 // Tipos
 interface User {
@@ -84,13 +89,13 @@ function App() {
       case 'dashboard':
         return <Dashboard />;
       case 'users':
-        return <div className="page-placeholder">👥 Gestão de Usuários (Em desenvolvimento)</div>;
+        return <Users />;
       case 'providers':
-        return <div className="page-placeholder">🚛 Gestão de Prestadores (Em desenvolvimento)</div>;
+        return <Providers />;
       case 'rides':
-        return <div className="page-placeholder">🚗 Gestão de Corridas (Em desenvolvimento)</div>;
+        return <Rides />;
       case 'reports':
-        return <div className="page-placeholder">📊 Relatórios (Em desenvolvimento)</div>;
+        return <Reports />;
       default:
         return <Dashboard />;
     }

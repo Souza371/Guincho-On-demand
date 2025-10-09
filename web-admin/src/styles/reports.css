@@ -1,0 +1,295 @@
+/* Reports Page Styles */
+.reports-page {
+  padding: 30px;
+  background: #f8f9fa;
+  min-height: 100vh;
+}
+
+/* Date Filters */
+.date-filters {
+  display: grid;
+  grid-template-columns: auto auto 1fr;
+  gap: 20px;
+  align-items: end;
+}
+
+.date-filters .form-group {
+  margin-bottom: 0;
+}
+
+/* Reports Grid */
+.reports-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+  gap: 24px;
+}
+
+/* Chart Table */
+.chart-table {
+  overflow-x: auto;
+}
+
+.chart-table .table th {
+  background: #f8f9fa;
+  font-weight: 600;
+  border-bottom: 2px solid #dee2e6;
+}
+
+/* Service Stats */
+.service-stats {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.service-stat-item {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.service-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.service-name {
+  font-weight: 600;
+  color: #495057;
+}
+
+.service-count {
+  font-size: 14px;
+  color: #6c757d;
+}
+
+.service-bar {
+  height: 8px;
+  background: #e9ecef;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.service-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #007AFF 0%, #0056CC 100%);
+  border-radius: 4px;
+  transition: width 0.3s ease;
+}
+
+/* Top Providers */
+.top-providers-card {
+  grid-column: span 2;
+}
+
+.top-providers-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.top-provider-item {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  border-left: 4px solid #007AFF;
+}
+
+.provider-rank {
+  font-size: 20px;
+  font-weight: 700;
+  color: #007AFF;
+  min-width: 40px;
+  text-align: center;
+}
+
+.provider-info {
+  flex: 1;
+}
+
+.provider-name {
+  font-size: 16px;
+  font-weight: 600;
+  color: #212529;
+  margin-bottom: 4px;
+}
+
+.provider-stats {
+  display: flex;
+  gap: 16px;
+  font-size: 14px;
+  color: #6c757d;
+}
+
+.provider-stats span {
+  padding: 2px 8px;
+  background: white;
+  border-radius: 4px;
+  font-weight: 500;
+}
+
+/* Performance Metrics */
+.performance-metrics {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 20px;
+}
+
+.metric-item {
+  text-align: center;
+  padding: 20px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  border: 1px solid #e9ecef;
+}
+
+.metric-label {
+  font-size: 14px;
+  color: #6c757d;
+  margin-bottom: 8px;
+  font-weight: 500;
+}
+
+.metric-value {
+  font-size: 24px;
+  font-weight: 700;
+  color: #212529;
+}
+
+/* Revenue Stat Icon */
+.stat-icon.revenue {
+  background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+}
+
+/* Responsive Design */
+@media (max-width: 1200px) {
+  .reports-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .top-providers-card {
+    grid-column: span 1;
+  }
+}
+
+@media (max-width: 768px) {
+  .reports-page {
+    padding: 20px;
+  }
+  
+  .date-filters {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+  
+  .reports-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+  
+  .performance-metrics {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+  
+  .provider-stats {
+    flex-direction: column;
+    gap: 8px;
+  }
+  
+  .top-provider-item {
+    flex-direction: column;
+    text-align: center;
+    gap: 12px;
+  }
+  
+  .provider-rank {
+    min-width: auto;
+  }
+}
+
+@media (max-width: 480px) {
+  .reports-page {
+    padding: 16px;
+  }
+  
+  .card-body {
+    padding: 16px;
+  }
+  
+  .chart-table {
+    font-size: 14px;
+  }
+  
+  .metric-value {
+    font-size: 20px;
+  }
+  
+  .service-info {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
+}
+
+/* Animation for charts */
+.service-bar-fill {
+  animation: fillBar 1s ease-out;
+}
+
+@keyframes fillBar {
+  from {
+    width: 0;
+  }
+  to {
+    width: var(--target-width, 0);
+  }
+}
+
+/* Export Button (for future use) */
+.export-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: white;
+  border: 1px solid #dee2e6;
+  border-radius: 6px;
+  color: #495057;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.export-button:hover {
+  background: #f8f9fa;
+  border-color: #007AFF;
+  color: #007AFF;
+}
+
+/* Print Styles */
+@media print {
+  .reports-page {
+    padding: 0;
+    background: white;
+  }
+  
+  .card {
+    break-inside: avoid;
+    box-shadow: none;
+    border: 1px solid #dee2e6;
+  }
+  
+  .date-filters,
+  .btn {
+    display: none;
+  }
+  
+  .reports-grid {
+    grid-template-columns: 1fr;
+  }
+}
