@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, KeyboardAvoidingView, Platform, ScrollView, Picker } from 'react-native';
+import { useAuth } from '../contexts/AuthContext';
+import { ProviderRegistration } from '../services/apiService';
 
 interface ProviderRegisterProps {
   onRegister: (providerData: any) => void;
@@ -102,7 +104,7 @@ const ProviderRegister: React.FC<ProviderRegisterProps> = ({ onRegister, onBackT
     setLoading(true);
     try {
       // Simular chamada de API
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      await new Promise<void>(resolve => setTimeout(() => resolve(), 2000));
       
       const providerData = {
         ...formData,
@@ -201,7 +203,7 @@ const ProviderRegister: React.FC<ProviderRegisterProps> = ({ onRegister, onBackT
               <Picker
                 selectedValue={formData.vehicleInfo.type}
                 style={styles.picker}
-                onValueChange={(value) => handleInputChange('vehicleInfo', 'type', value)}
+                onValueChange={(value: string) => handleInputChange('vehicleInfo', 'type', value)}
               >
                 <Picker.Item label="Guincho / Reboque" value="tow_truck" />
                 <Picker.Item label="Moto para Emergências" value="motorcycle" />
@@ -304,7 +306,7 @@ const ProviderRegister: React.FC<ProviderRegisterProps> = ({ onRegister, onBackT
               <Picker
                 selectedValue={formData.serviceArea.radius}
                 style={styles.picker}
-                onValueChange={(value) => handleInputChange('serviceArea', 'radius', value)}
+                onValueChange={(value: string) => handleInputChange('serviceArea', 'radius', value)}
               >
                 <Picker.Item label="5 km" value="5" />
                 <Picker.Item label="10 km" value="10" />

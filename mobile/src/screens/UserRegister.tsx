@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
+import { useAuth } from '../contexts/AuthContext';
+import { UserRegistration } from '../services/apiService';
 
 interface UserRegisterProps {
   onRegister: (userData: any) => void;
@@ -7,6 +9,7 @@ interface UserRegisterProps {
 }
 
 const UserRegister: React.FC<UserRegisterProps> = ({ onRegister, onBackToLogin }) => {
+  const { registerUser, isLoading, error } = useAuth();
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -76,17 +79,31 @@ const UserRegister: React.FC<UserRegisterProps> = ({ onRegister, onBackToLogin }
 
     setLoading(true);
     try {
-      // Simular chamada de API
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      const userData = {
-        ...formData,
-        type: 'user',
-        id: Date.now().toString()
+      const userData: UserRegistration = {
+        name: formData.name,
+        email: formData.email,
+        password: formData.password,
+        phone: formData.phone,
+        address: {
+          street: formData.address.street,
+          number: formData.address.number,
+          complement: '',
+          neighborhood: formData.address.neighborhood,
+          city: formData.address.city,
+          state: formData.address.state,
+          zipCode: formData.address.zipCode,
+        },
       };
+
+      const success = await registerUser(userData);
       
-      onRegister(userData);
-      Alert.alert('Sucesso', 'Cadastro realizado com sucesso!');
+      if (success) {
+        Alert.alert('Sucesso', 'Cadastro realizado com sucesso!', [
+          { text: 'OK', onPress: () => onRegister(userData) }
+        ]);
+      } else {
+        Alert.alert('Erro', error || 'Erro ao realizar cadastro. Tente novamente.');
+      }
     } catch (error) {
       Alert.alert('Erro', 'Erro ao realizar cadastro. Tente novamente.');
     } finally {
