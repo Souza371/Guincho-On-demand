@@ -1,4 +1,5 @@
 import React from 'react';
+import NotificationCenter from './NotificationCenter';
 import '../styles/Header.css';
 
 interface User {
@@ -28,6 +29,7 @@ const Header: React.FC<HeaderProps> = ({ user, onLogout }) => {
       </div>
 
       <div className="header-right">
+        <NotificationCenter />
         <div className="user-info">
           <span className="user-name">👤 {user?.name}</span>
           <button className="logout-button" onClick={onLogout}>

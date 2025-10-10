@@ -1,23 +1,36 @@
 import React, { useState, useEffect } from 'react';
+import apiService from '../services/apiService';
 import '../styles/global.css';
 import '../styles/pages.css';
-import '../styles/reports.css';
 
-interface ReportData {
-  totalUsers: number;
-  totalProviders: number;
-  totalRides: number;
+interface RevenueReport {
   totalRevenue: number;
-  monthlyRides: { month: string; count: number; revenue: number }[];
-  serviceTypeStats: { type: string; count: number; percentage: number }[];
-  topProviders: { id: string; name: string; rides: number; revenue: number; rating: number }[];
+  totalRides: number;
+  averageRideValue: number;
+  platformFee: number;
+  providerEarnings: number;
+  dailyRevenue: { date: string; revenue: number; rides: number }[];
+}
+
+interface RidesReport {
+  totalRides: number;
+  completedRides: number;
+  cancelledRides: number;
+  completionRate: number;
+  averageRating: number;
+  averageDistance: number;
+  averageDuration: number;
+  busyHours: { hour: number; rides: number }[];
 }
 
 const Reports: React.FC = () => {
-  const [reportData, setReportData] = useState<ReportData | null>(null);
+  const [revenueReport, setRevenueReport] = useState<RevenueReport | null>(null);
+  const [ridesReport, setRidesReport] = useState<RidesReport | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<'revenue' | 'rides'>('revenue');
   const [dateRange, setDateRange] = useState({
-    startDate: new Date(new Date().setMonth(new Date().getMonth() - 3)).toISOString().split('T')[0],
+    startDate: new Date(new Date().setMonth(new Date().getMonth() - 1)).toISOString().split('T')[0],
     endDate: new Date().toISOString().split('T')[0]
   });
 
@@ -28,38 +41,19 @@ const Reports: React.FC = () => {
   const fetchReportData = async () => {
     try {
       setLoading(true);
+      setError(null);
       
-      // Simular dados de relatório
-      const mockData: ReportData = {
-        totalUsers: 1234,
-        totalProviders: 89,
-        totalRides: 4567,
-        totalRevenue: 234567.89,
-        monthlyRides: [
-          { month: 'Janeiro', count: 1200, revenue: 72000 },
-          { month: 'Fevereiro', count: 1350, revenue: 81000 },
-          { month: 'Março', count: 1567, revenue: 94020 },
-        ],
-        serviceTypeStats: [
-          { type: 'Reboque', count: 2234, percentage: 49 },
-          { type: 'Bateria', count: 1123, percentage: 25 },
-          { type: 'Pneu', count: 890, percentage: 19 },
-          { type: 'Combustível', count: 234, percentage: 5 },
-          { type: 'Abertura', count: 86, percentage: 2 },
-        ],
-        topProviders: [
-          { id: '1', name: 'Carlos Guincho', rides: 234, revenue: 14040, rating: 4.9 },
-          { id: '2', name: 'Ana Reboque', rides: 198, revenue: 11880, rating: 4.8 },
-          { id: '3', name: 'João Socorro', rides: 167, revenue: 10020, rating: 4.7 },
-        ]
-      };
-
-      setTimeout(() => {
-        setReportData(mockData);
-        setLoading(false);
-      }, 1000);
+      const [revenueData, ridesData] = await Promise.all([
+        apiService.getRevenueReport(dateRange.startDate, dateRange.endDate),
+        apiService.getRidesReport(dateRange.startDate, dateRange.endDate)
+      ]);
+      
+      setRevenueReport(revenueData);
+      setRidesReport(ridesData);
     } catch (error) {
       console.error('Erro ao buscar dados do relatório:', error);
+      setError('Erro ao carregar relatórios');
+    } finally {
       setLoading(false);
     }
   };
@@ -75,6 +69,10 @@ const Reports: React.FC = () => {
     return new Intl.NumberFormat('pt-BR').format(value);
   };
 
+  const formatPercentage = (value: number) => {
+    return `${value.toFixed(1)}%`;
+  };
+
   if (loading) {
     return (
       <div className="reports-page">
@@ -83,13 +81,16 @@ const Reports: React.FC = () => {
     );
   }
 
-  if (!reportData) {
+  if (error) {
     return (
       <div className="reports-page">
         <div className="empty-state">
           <div className="empty-state-icon">📊</div>
           <h3>Erro ao carregar relatórios</h3>
-          <p>Tente novamente em alguns instantes.</p>
+          <p>{error}</p>
+          <button className="btn btn-primary" onClick={fetchReportData}>
+            Tentar novamente
+          </button>
         </div>
       </div>
     );
@@ -99,29 +100,29 @@ const Reports: React.FC = () => {
     <div className="reports-page fade-in">
       <div className="page-header">
         <h1>Relatórios e Analytics</h1>
-        <p>Análise detalhada do desempenho da plataforma</p>
+        <p>Acompanhe métricas e estatísticas detalhadas da plataforma</p>
       </div>
 
       {/* Filtros de Data */}
-      <div className="card mb-3">
+      <div className="card mb-4">
         <div className="card-body">
-          <div className="date-filters">
+          <div className="date-range-selector">
             <div className="form-group">
-              <label className="form-label">Data Inicial</label>
+              <label>Data Inicial:</label>
               <input
                 type="date"
                 className="form-control"
                 value={dateRange.startDate}
-                onChange={(e) => setDateRange({...dateRange, startDate: e.target.value})}
+                onChange={(e) => setDateRange(prev => ({ ...prev, startDate: e.target.value }))}
               />
             </div>
             <div className="form-group">
-              <label className="form-label">Data Final</label>
+              <label>Data Final:</label>
               <input
                 type="date"
                 className="form-control"
                 value={dateRange.endDate}
-                onChange={(e) => setDateRange({...dateRange, endDate: e.target.value})}
+                onChange={(e) => setDateRange(prev => ({ ...prev, endDate: e.target.value }))}
               />
             </div>
             <button className="btn btn-primary" onClick={fetchReportData}>
@@ -131,146 +132,98 @@ const Reports: React.FC = () => {
         </div>
       </div>
 
-      {/* Resumo Geral */}
-      <div className="stats-grid mb-4">
-        <div className="stat-card">
-          <div className="stat-header">
-            <span className="stat-title">Total de Usuários</span>
-            <div className="stat-icon users">👥</div>
+      {/* Abas dos Relatórios */}
+      <div className="card mb-4">
+        <div className="card-header">
+          <div className="nav nav-tabs">
+            <button 
+              className={`nav-link ${activeTab === 'revenue' ? 'active' : ''}`}
+              onClick={() => setActiveTab('revenue')}
+            >
+              💰 Receita
+            </button>
+            <button 
+              className={`nav-link ${activeTab === 'rides' ? 'active' : ''}`}
+              onClick={() => setActiveTab('rides')}
+            >
+              🚗 Corridas
+            </button>
           </div>
-          <div className="stat-value">{formatNumber(reportData.totalUsers)}</div>
         </div>
-        <div className="stat-card">
-          <div className="stat-header">
-            <span className="stat-title">Prestadores Ativos</span>
-            <div className="stat-icon providers">🚛</div>
-          </div>
-          <div className="stat-value">{formatNumber(reportData.totalProviders)}</div>
-        </div>
-        <div className="stat-card">
-          <div className="stat-header">
-            <span className="stat-title">Total de Viagens</span>
-            <div className="stat-icon rides">🚗</div>
-          </div>
-          <div className="stat-value">{formatNumber(reportData.totalRides)}</div>
-        </div>
-        <div className="stat-card">
-          <div className="stat-header">
-            <span className="stat-title">Receita Total</span>
-            <div className="stat-icon revenue">💰</div>
-          </div>
-          <div className="stat-value">{formatCurrency(reportData.totalRevenue)}</div>
+        <div className="card-body">
+          {activeTab === 'revenue' && revenueReport && (
+            <div className="revenue-report">
+              <div className="stats-grid mb-4">
+                <div className="stat-card revenue">
+                  <div className="stat-icon">�</div>
+                  <div className="stat-content">
+                    <h3>Receita Total</h3>
+                    <div className="stat-value">{formatCurrency(revenueReport.totalRevenue)}</div>
+                  </div>
+                </div>
+                <div className="stat-card rides">
+                  <div className="stat-icon">🚗</div>
+                  <div className="stat-content">
+                    <h3>Total de Corridas</h3>
+                    <div className="stat-value">{formatNumber(revenueReport.totalRides)}</div>
+                  </div>
+                </div>
+                <div className="stat-card average">
+                  <div className="stat-icon">�</div>
+                  <div className="stat-content">
+                    <h3>Valor Médio</h3>
+                    <div className="stat-value">{formatCurrency(revenueReport.averageRideValue)}</div>
+                  </div>
+                </div>
+                <div className="stat-card fee">
+                  <div className="stat-icon">🏦</div>
+                  <div className="stat-content">
+                    <h3>Taxa da Plataforma</h3>
+                    <div className="stat-value">{formatCurrency(revenueReport.platformFee)}</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'rides' && ridesReport && (
+            <div className="rides-report">
+              <div className="stats-grid mb-4">
+                <div className="stat-card total">
+                  <div className="stat-icon">🚗</div>
+                  <div className="stat-content">
+                    <h3>Total de Corridas</h3>
+                    <div className="stat-value">{formatNumber(ridesReport.totalRides)}</div>
+                  </div>
+                </div>
+                <div className="stat-card completed">
+                  <div className="stat-icon">✅</div>
+                  <div className="stat-content">
+                    <h3>Concluídas</h3>
+                    <div className="stat-value">{formatNumber(ridesReport.completedRides)}</div>
+                  </div>
+                </div>
+                <div className="stat-card rate">
+                  <div className="stat-icon">�</div>
+                  <div className="stat-content">
+                    <h3>Taxa de Conclusão</h3>
+                    <div className="stat-value">{formatPercentage(ridesReport.completionRate)}</div>
+                  </div>
+                </div>
+                <div className="stat-card rating">
+                  <div className="stat-icon">⭐</div>
+                  <div className="stat-content">
+                    <h3>Avaliação Média</h3>
+                    <div className="stat-value">{ridesReport.averageRating.toFixed(1)}</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
-      <div className="reports-grid">
-        {/* Gráfico de Viagens por Mês */}
-        <div className="card">
-          <div className="card-header">
-            <h3 className="card-title">Viagens por Mês</h3>
-          </div>
-          <div className="card-body">
-            <div className="chart-table">
-              <table className="table">
-                <thead>
-                  <tr>
-                    <th>Mês</th>
-                    <th>Viagens</th>
-                    <th>Receita</th>
-                    <th>Média por Viagem</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {reportData.monthlyRides.map((month, index) => (
-                    <tr key={index}>
-                      <td><strong>{month.month}</strong></td>
-                      <td>{formatNumber(month.count)}</td>
-                      <td>{formatCurrency(month.revenue)}</td>
-                      <td>{formatCurrency(month.revenue / month.count)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
 
-        {/* Tipos de Serviço */}
-        <div className="card">
-          <div className="card-header">
-            <h3 className="card-title">Tipos de Serviço</h3>
-          </div>
-          <div className="card-body">
-            <div className="service-stats">
-              {reportData.serviceTypeStats.map((service, index) => (
-                <div key={index} className="service-stat-item">
-                  <div className="service-info">
-                    <span className="service-name">{service.type}</span>
-                    <span className="service-count">{formatNumber(service.count)} ({service.percentage}%)</span>
-                  </div>
-                  <div className="service-bar">
-                    <div 
-                      className="service-bar-fill" 
-                      style={{ width: `${service.percentage}%` }}
-                    ></div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        {/* Top Prestadores */}
-        <div className="card top-providers-card">
-          <div className="card-header">
-            <h3 className="card-title">Top Prestadores</h3>
-          </div>
-          <div className="card-body">
-            <div className="top-providers-list">
-              {reportData.topProviders.map((provider, index) => (
-                <div key={provider.id} className="top-provider-item">
-                  <div className="provider-rank">#{index + 1}</div>
-                  <div className="provider-info">
-                    <div className="provider-name">{provider.name}</div>
-                    <div className="provider-stats">
-                      <span>{formatNumber(provider.rides)} viagens</span>
-                      <span>{formatCurrency(provider.revenue)}</span>
-                      <span>⭐ {provider.rating}</span>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        {/* Métricas de Performance */}
-        <div className="card">
-          <div className="card-header">
-            <h3 className="card-title">Métricas de Performance</h3>
-          </div>
-          <div className="card-body">
-            <div className="performance-metrics">
-              <div className="metric-item">
-                <div className="metric-label">Viagens por Dia</div>
-                <div className="metric-value">{Math.round(reportData.totalRides / 90)}</div>
-              </div>
-              <div className="metric-item">
-                <div className="metric-label">Receita por Viagem</div>
-                <div className="metric-value">{formatCurrency(reportData.totalRevenue / reportData.totalRides)}</div>
-              </div>
-              <div className="metric-item">
-                <div className="metric-label">Taxa de Conversão</div>
-                <div className="metric-value">85%</div>
-              </div>
-              <div className="metric-item">
-                <div className="metric-label">Avaliação Média</div>
-                <div className="metric-value">4.7 ⭐</div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
     </div>
   );
 };

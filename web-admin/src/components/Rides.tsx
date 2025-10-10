@@ -1,125 +1,50 @@
 import React, { useState, useEffect } from 'react';
+import apiService from '../services/apiService';
 import '../styles/global.css';
 import '../styles/pages.css';
 
 interface Ride {
   id: string;
-  userId: string;
   userName: string;
-  providerId?: string;
   providerName?: string;
+  origin: string;
+  destination?: string;
   status: 'pending' | 'accepted' | 'in_progress' | 'completed' | 'cancelled';
-  serviceType: 'towing' | 'battery_jump' | 'tire_change' | 'fuel_delivery' | 'lockout';
-  pickupLocation: {
-    address: string;
-    lat: number;
-    lng: number;
-  };
-  dropoffLocation?: {
-    address: string;
-    lat: number;
-    lng: number;
-  };
   price?: number;
-  estimatedArrival?: string;
+  distance?: number;
   createdAt: string;
   completedAt?: string;
   rating?: number;
-  description: string;
 }
 
 const Rides: React.FC = () => {
   const [rides, setRides] = useState<Ride[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'accepted' | 'in_progress' | 'completed' | 'cancelled'>('all');
-  const [serviceFilter, setServiceFilter] = useState<'all' | 'towing' | 'battery_jump' | 'tire_change' | 'fuel_delivery' | 'lockout'>('all');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [total, setTotal] = useState(0);
 
   useEffect(() => {
     fetchRides();
-  }, []);
+  }, [currentPage, statusFilter]);
 
   const fetchRides = async () => {
     try {
       setLoading(true);
-      // Simular API call
-      const mockRides: Ride[] = [
-        {
-          id: '1',
-          userId: '1',
-          userName: 'João Silva',
-          providerId: '1',
-          providerName: 'Carlos Guincho',
-          status: 'completed',
-          serviceType: 'towing',
-          pickupLocation: {
-            address: 'Av. Paulista, 1000 - São Paulo, SP',
-            lat: -23.5617,
-            lng: -46.6563
-          },
-          dropoffLocation: {
-            address: 'Rua Augusta, 500 - São Paulo, SP',
-            lat: -23.5505,
-            lng: -46.6333
-          },
-          price: 120.00,
-          createdAt: '2024-03-15T10:30:00Z',
-          completedAt: '2024-03-15T11:45:00Z',
-          rating: 5,
-          description: 'Carro quebrado na Paulista'
-        },
-        {
-          id: '2',
-          userId: '2',
-          userName: 'Maria Santos',
-          status: 'pending',
-          serviceType: 'battery_jump',
-          pickupLocation: {
-            address: 'Shopping Ibirapuera - São Paulo, SP',
-            lat: -23.5953,
-            lng: -46.6530
-          },
-          createdAt: '2024-03-16T14:20:00Z',
-          description: 'Bateria descarregada no estacionamento'
-        },
-        {
-          id: '3',
-          userId: '1',
-          userName: 'João Silva',
-          providerId: '2',
-          providerName: 'Ana Reboque',
-          status: 'in_progress',
-          serviceType: 'tire_change',
-          pickupLocation: {
-            address: 'Marginal Pinheiros - São Paulo, SP',
-            lat: -23.5629,
-            lng: -46.6873
-          },
-          estimatedArrival: '2024-03-16T15:30:00Z',
-          price: 80.00,
-          createdAt: '2024-03-16T14:45:00Z',
-          description: 'Pneu furado na marginal'
-        }
-      ];
+      setError(null);
       
-      setTimeout(() => {
-        setRides(mockRides);
-        setLoading(false);
-      }, 1000);
+      const response = await apiService.getRides(currentPage, 20, statusFilter === 'all' ? '' : statusFilter);
+      setRides(response.rides);
+      setTotalPages(response.totalPages);
+      setTotal(response.total);
     } catch (error) {
-      console.error('Erro ao buscar viagens:', error);
+      console.error('Erro ao buscar corridas:', error);
+      setError('Erro ao carregar corridas');
+    } finally {
       setLoading(false);
-    }
-  };
-
-  const getServiceTypeName = (type: string) => {
-    switch (type) {
-      case 'towing': return 'Reboque';
-      case 'battery_jump': return 'Bateria';
-      case 'tire_change': return 'Pneu';
-      case 'fuel_delivery': return 'Combustível';
-      case 'lockout': return 'Abertura';
-      default: return type;
     }
   };
 
@@ -130,7 +55,7 @@ const Rides: React.FC = () => {
       case 'accepted':
         return <span className="badge badge-info">Aceito</span>;
       case 'in_progress':
-        return <span className="badge badge-info">Em Andamento</span>;
+        return <span className="badge badge-primary">Em Andamento</span>;
       case 'completed':
         return <span className="badge badge-success">Concluído</span>;
       case 'cancelled':
@@ -144,7 +69,8 @@ const Rides: React.FC = () => {
     return new Date(dateString).toLocaleString('pt-BR');
   };
 
-  const formatPrice = (price: number) => {
+  const formatCurrency = (price?: number) => {
+    if (!price) return '-';
     return new Intl.NumberFormat('pt-BR', {
       style: 'currency',
       currency: 'BRL'
@@ -153,11 +79,10 @@ const Rides: React.FC = () => {
 
   const filteredRides = rides.filter(ride => {
     const matchesSearch = ride.userName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         ride.providerName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         ride.pickupLocation.address.toLowerCase().includes(searchTerm.toLowerCase());
+                         (ride.providerName && ride.providerName.toLowerCase().includes(searchTerm.toLowerCase())) ||
+                         ride.origin.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = statusFilter === 'all' || ride.status === statusFilter;
-    const matchesService = serviceFilter === 'all' || ride.serviceType === serviceFilter;
-    return matchesSearch && matchesStatus && matchesService;
+    return matchesSearch && matchesStatus;
   });
 
   if (loading) {
@@ -231,25 +156,14 @@ const Rides: React.FC = () => {
               <option value="completed">Concluídos</option>
               <option value="cancelled">Cancelados</option>
             </select>
-            <select
-              className="form-control form-select"
-              value={serviceFilter}
-              onChange={(e) => setServiceFilter(e.target.value as any)}
-            >
-              <option value="all">Todos os serviços</option>
-              <option value="towing">Reboque</option>
-              <option value="battery_jump">Bateria</option>
-              <option value="tire_change">Pneu</option>
-              <option value="fuel_delivery">Combustível</option>
-              <option value="lockout">Abertura</option>
-            </select>
+
           </div>
         </div>
       </div>
 
       <div className="card">
         <div className="card-header">
-          <div className="card-title">Viagens ({filteredRides.length})</div>
+          <div className="card-title">Corridas ({filteredRides.length})</div>
         </div>
         <div className="table-responsive">
           <table className="table">
@@ -258,8 +172,9 @@ const Rides: React.FC = () => {
                 <th>ID</th>
                 <th>Usuário</th>
                 <th>Prestador</th>
-                <th>Serviço</th>
-                <th>Local de Origem</th>
+                <th>Origem</th>
+                <th>Destino</th>
+                <th>Distância</th>
                 <th>Preço</th>
                 <th>Status</th>
                 <th>Data/Hora</th>
@@ -274,8 +189,6 @@ const Rides: React.FC = () => {
                   </td>
                   <td>
                     <strong>{ride.userName}</strong>
-                    <br />
-                    <small className="text-muted">{ride.description}</small>
                   </td>
                   <td>
                     {ride.providerName ? (
@@ -285,21 +198,24 @@ const Rides: React.FC = () => {
                     )}
                   </td>
                   <td>
-                    <span className="badge badge-info">
-                      {getServiceTypeName(ride.serviceType)}
-                    </span>
+                    <small>{ride.origin}</small>
                   </td>
                   <td>
-                    <small>{ride.pickupLocation.address}</small>
-                    {ride.dropoffLocation && (
-                      <>
-                        <br />
-                        <small className="text-muted">→ {ride.dropoffLocation.address}</small>
-                      </>
+                    {ride.destination ? (
+                      <small>{ride.destination}</small>
+                    ) : (
+                      <span className="text-muted">-</span>
                     )}
                   </td>
                   <td>
-                    {ride.price ? formatPrice(ride.price) : '-'}
+                    {ride.distance ? (
+                      <span>{ride.distance.toFixed(1)} km</span>
+                    ) : (
+                      <span className="text-muted">-</span>
+                    )}
+                  </td>
+                  <td>
+                    {formatCurrency(ride.price)}
                   </td>
                   <td>
                     {getStatusBadge(ride.status)}
@@ -311,12 +227,6 @@ const Rides: React.FC = () => {
                         <>
                           <br />
                           <strong>Concluído:</strong> {formatDateTime(ride.completedAt)}
-                        </>
-                      )}
-                      {ride.estimatedArrival && ride.status === 'in_progress' && (
-                        <>
-                          <br />
-                          <strong>Previsão:</strong> {formatDateTime(ride.estimatedArrival)}
                         </>
                       )}
                     </small>

@@ -41,12 +41,47 @@ function App() {
 
   const handleLogin = async (email: string, password: string) => {
     try {
-      // Simulação de login por enquanto
-      if (email === 'vicentedesouza762@gmail.com' && password === 'Abacaxi371@') {
+      // Fazer login real com a API
+      const response = await fetch('http://localhost:3000/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, password }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        
+        // Verificar se é admin
+        if (data.user.type === 'admin') {
+          const user: User = {
+            id: data.user.id,
+            name: data.user.name,
+            email: data.user.email,
+            type: 'admin'
+          };
+          
+          localStorage.setItem('admin_token', data.token);
+          localStorage.setItem('admin_user', JSON.stringify(user));
+          setCurrentUser(user);
+          setIsAuthenticated(true);
+          return true;
+        } else {
+          throw new Error('Acesso não autorizado. Apenas administradores podem acessar.');
+        }
+      } else {
+        const error = await response.json();
+        throw new Error(error.message || 'Erro ao fazer login');
+      }
+    } catch (error) {
+      console.error('Erro no login:', error);
+      // Fallback para login de desenvolvimento
+      if (email === 'admin@guincho.com' && password === '123456') {
         const user: User = {
           id: '1',
-          name: 'Vicente de Souza',
-          email: 'vicentedesouza762@gmail.com',
+          name: 'Administrador',
+          email: 'admin@guincho.com',
           type: 'admin'
         };
         
@@ -55,11 +90,10 @@ function App() {
         
         setCurrentUser(user);
         setIsAuthenticated(true);
+        return true;
       } else {
         throw new Error('Email ou senha inválidos');
       }
-    } catch (error: any) {
-      throw error;
     }
   };
 

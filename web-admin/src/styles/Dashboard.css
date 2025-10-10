@@ -290,4 +290,110 @@
   .stat-value {
     font-size: 24px;
   }
+  
+  .charts-grid {
+    grid-template-columns: 1fr;
+    gap: 15px;
+  }
+  
+  .dashboard-section {
+    margin-bottom: 20px;
+  }
+}
+
+/* Dashboard Sections */
+.dashboard-section {
+  margin-bottom: 30px;
+}
+
+.charts-section {
+  margin-bottom: 30px;
+}
+
+.charts-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+  gap: 20px;
+}
+
+/* Dashboard Header */
+.dashboard-header {
+  margin-bottom: 30px;
+  padding-bottom: 20px;
+  border-bottom: 2px solid #e9ecef;
+}
+
+.dashboard-header h2 {
+  margin: 0 0 8px 0;
+  color: #212529;
+  font-size: 24px;
+  font-weight: 700;
+}
+
+.dashboard-header p {
+  margin: 0;
+  color: #6c757d;
+  font-size: 16px;
+}
+
+/* Loading States */
+.dashboard-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px;
+  text-align: center;
+}
+
+.loading-spinner {
+  width: 50px;
+  height: 50px;
+  border: 4px solid #f3f4f6;
+  border-top: 4px solid #3b82f6;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 20px;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Enhanced Stats Cards */
+.stat-card.users {
+  border-left: 4px solid #3b82f6;
+}
+
+.stat-card.providers {
+  border-left: 4px solid #10b981;
+}
+
+.stat-card.rides {
+  border-left: 4px solid #f59e0b;
+}
+
+.stat-card.active-rides {
+  border-left: 4px solid #ef4444;
+}
+
+.stat-card.revenue {
+  border-left: 4px solid #8b5cf6;
+}
+
+.stat-card.success {
+  border-left: 4px solid #059669;
+}
+
+.stat-card.new-users {
+  border-left: 4px solid #06b6d4;
+}
+
+.stat-card.new-providers {
+  border-left: 4px solid #84cc16;
+}
+
+.stat-card.total-revenue {
+  border-left: 4px solid #dc2626;
 }

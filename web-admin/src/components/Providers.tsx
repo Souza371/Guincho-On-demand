@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import apiService from '../services/apiService';
 import '../styles/global.css';
 import '../styles/pages.css';
 
@@ -7,122 +8,93 @@ interface Provider {
   name: string;
   email: string;
   phone: string;
-  vehicleType: 'tow_truck' | 'motorcycle';
+  vehicleType: string;
   licensePlate: string;
-  status: 'active' | 'inactive' | 'pending';
-  rating: number;
-  totalJobs: number;
+  isApproved: boolean;
+  isActive: boolean;
+  averageRating: number;
+  totalRides: number;
   createdAt: string;
-  location?: {
-    lat: number;
-    lng: number;
-    address: string;
+  earnings: number;
+  documents: {
+    cnh: 'approved' | 'pending' | 'rejected';
+    vehicleDoc: 'approved' | 'pending' | 'rejected';
+    insurance: 'approved' | 'pending' | 'rejected';
   };
 }
 
 const Providers: React.FC = () => {
   const [providers, setProviders] = useState<Provider[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive' | 'pending'>('all');
-  const [vehicleFilter, setVehicleFilter] = useState<'all' | 'tow_truck' | 'motorcycle'>('all');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'approved' | 'pending' | 'active' | 'inactive'>('all');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [total, setTotal] = useState(0);
 
   useEffect(() => {
     fetchProviders();
-  }, []);
+  }, [currentPage, searchTerm, statusFilter]);
 
   const fetchProviders = async () => {
     try {
       setLoading(true);
-      // Simular API call
-      const mockProviders: Provider[] = [
-        {
-          id: '1',
-          name: 'Carlos Guincho',
-          email: 'carlos@guincho.com',
-          phone: '(11) 99999-1111',
-          vehicleType: 'tow_truck',
-          licensePlate: 'ABC-1234',
-          status: 'active',
-          rating: 4.8,
-          totalJobs: 150,
-          createdAt: '2024-01-10',
-          location: {
-            lat: -23.5505,
-            lng: -46.6333,
-            address: 'São Paulo, SP'
-          }
-        },
-        {
-          id: '2',
-          name: 'Ana Reboque',
-          email: 'ana@reboque.com',
-          phone: '(11) 88888-2222',
-          vehicleType: 'tow_truck',
-          licensePlate: 'XYZ-5678',
-          status: 'active',
-          rating: 4.9,
-          totalJobs: 89,
-          createdAt: '2024-01-15',
-          location: {
-            lat: -23.5505,
-            lng: -46.6333,
-            address: 'São Paulo, SP'
-          }
-        },
-        {
-          id: '3',
-          name: 'José Moto',
-          email: 'jose@moto.com',
-          phone: '(11) 77777-3333',
-          vehicleType: 'motorcycle',
-          licensePlate: 'MOT-9999',
-          status: 'pending',
-          rating: 0,
-          totalJobs: 0,
-          createdAt: '2024-03-01'
-        }
-      ];
+      setError(null);
       
-      setTimeout(() => {
-        setProviders(mockProviders);
-        setLoading(false);
-      }, 1000);
+      const response = await apiService.getProviders(currentPage, 20, searchTerm);
+      setProviders(response.providers);
+      setTotalPages(response.totalPages);
+      setTotal(response.total);
     } catch (error) {
       console.error('Erro ao buscar prestadores:', error);
+      setError('Erro ao carregar prestadores');
+    } finally {
       setLoading(false);
     }
   };
 
-  const handleStatusChange = async (providerId: string, newStatus: 'active' | 'inactive' | 'pending') => {
+  const handleApproveProvider = async (providerId: string) => {
     try {
+      await apiService.approveProvider(providerId);
       setProviders(providers.map(provider => 
-        provider.id === providerId ? { ...provider, status: newStatus } : provider
+        provider.id === providerId ? { ...provider, isApproved: true, isActive: true } : provider
       ));
-      // Aqui seria feita a chamada para a API
+    } catch (error) {
+      console.error('Erro ao aprovar prestador:', error);
+      setError('Erro ao aprovar prestador');
+    }
+  };
+
+  const handleStatusChange = async (providerId: string, isActive: boolean) => {
+    try {
+      await apiService.updateProviderStatus(providerId, isActive);
+      setProviders(providers.map(provider => 
+        provider.id === providerId ? { ...provider, isActive } : provider
+      ));
     } catch (error) {
       console.error('Erro ao alterar status:', error);
+      setError('Erro ao alterar status do prestador');
     }
   };
 
-  const getVehicleTypeName = (type: string) => {
-    switch (type) {
-      case 'tow_truck': return 'Guincho';
-      case 'motorcycle': return 'Moto';
-      default: return type;
-    }
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat('pt-BR', {
+      style: 'currency',
+      currency: 'BRL'
+    }).format(value);
   };
 
-  const getStatusBadge = (status: string) => {
+  const getDocumentStatusBadge = (status: 'approved' | 'pending' | 'rejected') => {
     switch (status) {
-      case 'active':
-        return <span className="badge badge-success">Ativo</span>;
-      case 'inactive':
-        return <span className="badge badge-secondary">Inativo</span>;
+      case 'approved':
+        return <span className="badge badge-success">✓</span>;
       case 'pending':
-        return <span className="badge badge-warning">Pendente</span>;
+        return <span className="badge badge-warning">⏳</span>;
+      case 'rejected':
+        return <span className="badge badge-danger">✗</span>;
       default:
-        return <span className="badge badge-secondary">{status}</span>;
+        return <span className="badge badge-secondary">?</span>;
     }
   };
 
@@ -130,9 +102,19 @@ const Providers: React.FC = () => {
     const matchesSearch = provider.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          provider.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          provider.licensePlate.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = statusFilter === 'all' || provider.status === statusFilter;
-    const matchesVehicle = vehicleFilter === 'all' || provider.vehicleType === vehicleFilter;
-    return matchesSearch && matchesStatus && matchesVehicle;
+    
+    let matchesStatus = true;
+    if (statusFilter === 'approved') {
+      matchesStatus = provider.isApproved;
+    } else if (statusFilter === 'pending') {
+      matchesStatus = !provider.isApproved;
+    } else if (statusFilter === 'active') {
+      matchesStatus = provider.isActive;
+    } else if (statusFilter === 'inactive') {
+      matchesStatus = !provider.isActive;
+    }
+    
+    return matchesSearch && matchesStatus;
   });
 
   if (loading) {
@@ -168,18 +150,10 @@ const Providers: React.FC = () => {
               onChange={(e) => setStatusFilter(e.target.value as any)}
             >
               <option value="all">Todos os status</option>
+              <option value="approved">Aprovados</option>
+              <option value="pending">Pendente aprovação</option>
               <option value="active">Ativos</option>
               <option value="inactive">Inativos</option>
-              <option value="pending">Pendentes</option>
-            </select>
-            <select
-              className="form-control form-select"
-              value={vehicleFilter}
-              onChange={(e) => setVehicleFilter(e.target.value as any)}
-            >
-              <option value="all">Todos os veículos</option>
-              <option value="tow_truck">Guincho</option>
-              <option value="motorcycle">Moto</option>
             </select>
           </div>
         </div>
@@ -197,8 +171,9 @@ const Providers: React.FC = () => {
                 <th>Contato</th>
                 <th>Veículo</th>
                 <th>Avaliação</th>
-                <th>Jobs Concluídos</th>
-                <th>Data de Cadastro</th>
+                <th>Corridas</th>
+                <th>Ganhos</th>
+                <th>Documentos</th>
                 <th>Status</th>
                 <th>Ações</th>
               </tr>
@@ -213,64 +188,59 @@ const Providers: React.FC = () => {
                   </td>
                   <td>
                     {provider.phone}
-                    {provider.location && (
-                      <>
-                        <br />
-                        <small className="text-muted">{provider.location.address}</small>
-                      </>
-                    )}
                   </td>
                   <td>
                     <div>
-                      <strong>{getVehicleTypeName(provider.vehicleType)}</strong>
+                      <strong>{provider.vehicleType}</strong>
                       <br />
                       <small className="text-muted">{provider.licensePlate}</small>
                     </div>
                   </td>
                   <td>
-                    {provider.rating > 0 ? (
+                    {provider.averageRating > 0 ? (
                       <div>
-                        <span>⭐ {provider.rating.toFixed(1)}</span>
+                        <span>⭐ {provider.averageRating.toFixed(1)}</span>
                       </div>
                     ) : (
                       <span className="text-muted">Sem avaliações</span>
                     )}
                   </td>
-                  <td>{provider.totalJobs}</td>
-                  <td>{new Date(provider.createdAt).toLocaleDateString('pt-BR')}</td>
-                  <td>{getStatusBadge(provider.status)}</td>
+                  <td>{provider.totalRides}</td>
+                  <td>{formatCurrency(provider.earnings)}</td>
                   <td>
-                    <div className="d-flex gap-2">
-                      {provider.status === 'pending' && (
-                        <>
-                          <button
-                            className="btn btn-sm btn-success"
-                            onClick={() => handleStatusChange(provider.id, 'active')}
-                          >
-                            Aprovar
-                          </button>
-                          <button
-                            className="btn btn-sm btn-danger"
-                            onClick={() => handleStatusChange(provider.id, 'inactive')}
-                          >
-                            Rejeitar
-                          </button>
-                        </>
-                      )}
-                      {provider.status === 'active' && (
-                        <button
-                          className="btn btn-sm btn-danger"
-                          onClick={() => handleStatusChange(provider.id, 'inactive')}
-                        >
-                          Desativar
-                        </button>
-                      )}
-                      {provider.status === 'inactive' && (
+                    <div className="d-flex gap-1">
+                      <div title="CNH">{getDocumentStatusBadge(provider.documents.cnh)}</div>
+                      <div title="Documento do Veículo">{getDocumentStatusBadge(provider.documents.vehicleDoc)}</div>
+                      <div title="Seguro">{getDocumentStatusBadge(provider.documents.insurance)}</div>
+                    </div>
+                  </td>
+                  <td>
+                    <div>
+                      <span className={`badge ${provider.isApproved ? 'badge-success' : 'badge-warning'}`}>
+                        {provider.isApproved ? 'Aprovado' : 'Pendente'}
+                      </span>
+                      <br />
+                      <span className={`badge ${provider.isActive ? 'badge-success' : 'badge-secondary'}`}>
+                        {provider.isActive ? 'Ativo' : 'Inativo'}
+                      </span>
+                    </div>
+                  </td>
+                  <td>
+                    <div className="d-flex gap-2 flex-column">
+                      {!provider.isApproved && (
                         <button
                           className="btn btn-sm btn-success"
-                          onClick={() => handleStatusChange(provider.id, 'active')}
+                          onClick={() => handleApproveProvider(provider.id)}
                         >
-                          Ativar
+                          Aprovar
+                        </button>
+                      )}
+                      {provider.isApproved && (
+                        <button
+                          className={`btn btn-sm ${provider.isActive ? 'btn-danger' : 'btn-success'}`}
+                          onClick={() => handleStatusChange(provider.id, !provider.isActive)}
+                        >
+                          {provider.isActive ? 'Desativar' : 'Ativar'}
                         </button>
                       )}
                     </div>

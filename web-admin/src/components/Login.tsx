@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import '../styles/Login.css';
 
 interface LoginProps {
-  onLogin: (email: string, password: string) => Promise<void>;
+  onLogin: (email: string, password: string) => Promise<boolean>;
 }
 
 const Login: React.FC<LoginProps> = ({ onLogin }) => {
@@ -22,7 +22,10 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
     try {
       setIsLoading(true);
       setError('');
-      await onLogin(email.trim(), password);
+      const success = await onLogin(email.trim(), password);
+      if (!success) {
+        setError('Credenciais inválidas');
+      }
     } catch (err: any) {
       setError(err.message || 'Erro ao fazer login');
     } finally {

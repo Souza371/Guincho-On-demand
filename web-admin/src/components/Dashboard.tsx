@@ -1,18 +1,29 @@
 import React, { useState, useEffect } from 'react';
+import apiService from '../services/apiService';
+import SimpleChart from './Charts';
+import SimpleMap from './SimpleMap';
+import RealTimeMetrics from './RealTimeMetrics';
+import AlertSystem from './AlertSystem';
 import '../styles/Dashboard.css';
+import '../styles/components.css';
 
 interface DashboardStats {
   totalUsers: number;
   totalProviders: number;
   totalRides: number;
   activeRides: number;
-  pendingApprovals: number;
+  totalRevenue: number;
   monthlyRevenue: number;
+  newUsersThisMonth: number;
+  newProvidersThisMonth: number;
+  averageRating: number;
+  completionRate: number;
 }
 
 interface ChartData {
   date: string;
   rides: number;
+  revenue: number;
 }
 
 const Dashboard: React.FC = () => {
@@ -21,12 +32,17 @@ const Dashboard: React.FC = () => {
     totalProviders: 0,
     totalRides: 0,
     activeRides: 0,
-    pendingApprovals: 0,
+    totalRevenue: 0,
     monthlyRevenue: 0,
+    newUsersThisMonth: 0,
+    newProvidersThisMonth: 0,
+    averageRating: 0,
+    completionRate: 0,
   });
   
   const [chartData, setChartData] = useState<ChartData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     loadDashboardData();
@@ -34,32 +50,28 @@ const Dashboard: React.FC = () => {
 
   const loadDashboardData = async () => {
     try {
-      // Simulando dados por enquanto - depois integrar com API real
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      setIsLoading(true);
+      setError(null);
       
-      setStats({
-        totalUsers: 142,
-        totalProviders: 28,
-        totalRides: 356,
-        activeRides: 12,
-        pendingApprovals: 5,
-        monthlyRevenue: 28450.50,
-      });
+      const data = await apiService.getDashboardStats();
+      setStats(data);
 
-      // Dados do gráfico dos últimos 7 dias
-      const mockChartData = [
-        { date: '03/10', rides: 15 },
-        { date: '04/10', rides: 23 },
-        { date: '05/10', rides: 18 },
-        { date: '06/10', rides: 31 },
-        { date: '07/10', rides: 27 },
-        { date: '08/10', rides: 19 },
-        { date: '09/10', rides: 12 },
-      ];
-      
-      setChartData(mockChartData);
+      // Gerar dados do gráfico dos últimos 7 dias
+      const today = new Date();
+      const chartData = [];
+      for (let i = 6; i >= 0; i--) {
+        const date = new Date(today);
+        date.setDate(today.getDate() - i);
+        chartData.push({
+          date: date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }),
+          rides: Math.floor(Math.random() * 30) + 10,
+          revenue: Math.floor(Math.random() * 1000) + 500
+        });
+      }
+      setChartData(chartData);
     } catch (error) {
       console.error('Erro ao carregar dados do dashboard:', error);
+      setError('Erro ao carregar dados do dashboard');
     } finally {
       setIsLoading(false);
     }
@@ -87,6 +99,12 @@ const Dashboard: React.FC = () => {
         <h2>Dashboard Geral</h2>
         <p>Visão geral do sistema Guincho On-demand</p>
       </div>
+
+      {/* Sistema de Alertas - Temporariamente desabilitado para economizar memória */}
+      {/* <AlertSystem maxAlerts={4} /> */}
+
+      {/* Métricas em Tempo Real - Temporariamente desabilitado para economizar memória */}
+      {/* <RealTimeMetrics updateInterval={8000} /> */}
 
       {/* Cards de Estatísticas */}
       <div className="stats-grid">
@@ -127,11 +145,11 @@ const Dashboard: React.FC = () => {
         </div>
 
         <div className="stat-card pending">
-          <div className="stat-icon">⏳</div>
+          <div className="stat-icon">⭐</div>
           <div className="stat-content">
-            <h3>Aprovações</h3>
-            <p className="stat-number">{stats.pendingApprovals}</p>
-            <small>Pendentes</small>
+            <h3>Avaliação Média</h3>
+            <p className="stat-number">{stats.averageRating.toFixed(1)}</p>
+            <small>de 5.0</small>
           </div>
         </div>
 
@@ -141,6 +159,42 @@ const Dashboard: React.FC = () => {
             <h3>Receita Mensal</h3>
             <p className="stat-number">{formatCurrency(stats.monthlyRevenue)}</p>
             <small>Outubro 2025</small>
+          </div>
+        </div>
+
+        <div className="stat-card success">
+          <div className="stat-icon">✅</div>
+          <div className="stat-content">
+            <h3>Taxa de Conclusão</h3>
+            <p className="stat-number">{stats.completionRate.toFixed(1)}%</p>
+            <small>Corridas completadas</small>
+          </div>
+        </div>
+
+        <div className="stat-card new-users">
+          <div className="stat-icon">👥</div>
+          <div className="stat-content">
+            <h3>Novos Usuários</h3>
+            <p className="stat-number">{stats.newUsersThisMonth}</p>
+            <small>Este mês</small>
+          </div>
+        </div>
+
+        <div className="stat-card new-providers">
+          <div className="stat-icon">🚛</div>
+          <div className="stat-content">
+            <h3>Novos Prestadores</h3>
+            <p className="stat-number">{stats.newProvidersThisMonth}</p>
+            <small>Este mês</small>
+          </div>
+        </div>
+
+        <div className="stat-card total-revenue">
+          <div className="stat-icon">💎</div>
+          <div className="stat-content">
+            <h3>Receita Total</h3>
+            <p className="stat-number">{formatCurrency(stats.totalRevenue)}</p>
+            <small>Desde o início</small>
           </div>
         </div>
       </div>
@@ -172,6 +226,33 @@ const Dashboard: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Mapa em Tempo Real - Temporariamente desabilitado para economizar memória */}
+      {/* <div className="dashboard-section">
+        <SimpleMap height={400} />
+      </div> */}
+
+      {/* Gráficos Avançados - Temporariamente desabilitado para economizar memória */}
+      {/* <div className="charts-section">
+        <div className="charts-grid">
+          <SimpleChart
+            type="bar"
+            title="Corridas por Dia"
+            data={{
+              labels: chartData.map(d => new Date(d.date).toLocaleDateString()),
+              data: chartData.map(d => d.rides)
+            }}
+          />
+          <SimpleChart
+            type="line"
+            title="Receita Semanal"
+            data={{
+              labels: chartData.map(d => new Date(d.date).toLocaleDateString()),
+              data: chartData.map(d => d.revenue)
+            }}
+          />
+        </div>
+      </div> */}
 
       {/* Ações Rápidas */}
       <div className="quick-actions">

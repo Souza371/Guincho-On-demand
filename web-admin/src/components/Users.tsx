@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import apiService from '../services/apiService';
 import '../styles/global.css';
 import '../styles/pages.css';
 
@@ -7,80 +8,61 @@ interface User {
   name: string;
   email: string;
   phone: string;
-  status: 'active' | 'inactive';
+  isActive: boolean;
   createdAt: string;
   totalRides: number;
+  averageRating: number;
 }
 
 const Users: React.FC = () => {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('all');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [total, setTotal] = useState(0);
 
   useEffect(() => {
     fetchUsers();
-  }, []);
+  }, [currentPage, searchTerm, statusFilter]);
 
   const fetchUsers = async () => {
     try {
       setLoading(true);
-      // Simular API call
-      const mockUsers: User[] = [
-        {
-          id: '1',
-          name: 'João Silva',
-          email: 'joao@email.com',
-          phone: '(11) 99999-9999',
-          status: 'active',
-          createdAt: '2024-01-15',
-          totalRides: 15
-        },
-        {
-          id: '2',
-          name: 'Maria Santos',
-          email: 'maria@email.com',
-          phone: '(11) 88888-8888',
-          status: 'active',
-          createdAt: '2024-02-10',
-          totalRides: 8
-        },
-        {
-          id: '3',
-          name: 'Pedro Costa',
-          email: 'pedro@email.com',
-          phone: '(11) 77777-7777',
-          status: 'inactive',
-          createdAt: '2024-01-20',
-          totalRides: 3
-        }
-      ];
+      setError(null);
       
-      setTimeout(() => {
-        setUsers(mockUsers);
-        setLoading(false);
-      }, 1000);
+      const response = await apiService.getUsers(currentPage, 20, searchTerm);
+      setUsers(response.users);
+      setTotalPages(response.totalPages);
+      setTotal(response.total);
     } catch (error) {
       console.error('Erro ao buscar usuários:', error);
+      setError('Erro ao carregar usuários');
+    } finally {
       setLoading(false);
     }
   };
 
-  const handleStatusChange = async (userId: string, newStatus: 'active' | 'inactive') => {
+  const handleStatusChange = async (userId: string, isActive: boolean) => {
     try {
+      await apiService.updateUserStatus(userId, isActive);
       setUsers(users.map(user => 
-        user.id === userId ? { ...user, status: newStatus } : user
+        user.id === userId ? { ...user, isActive } : user
       ));
-      // Aqui seria feita a chamada para a API
     } catch (error) {
       console.error('Erro ao alterar status:', error);
+      setError('Erro ao alterar status do usuário');
     }
   };
 
   const filteredUsers = users.filter(user => {
     const matchesSearch = user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          user.email.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = statusFilter === 'all' || user.status === statusFilter;
+    const matchesStatus = statusFilter === 'all' || 
+                         (statusFilter === 'active' && user.isActive) ||
+                         (statusFilter === 'inactive' && !user.isActive);
     return matchesSearch && matchesStatus;
   });
 
@@ -152,17 +134,20 @@ const Users: React.FC = () => {
                   <td>{user.totalRides}</td>
                   <td>{new Date(user.createdAt).toLocaleDateString('pt-BR')}</td>
                   <td>
-                    <span className={`badge ${user.status === 'active' ? 'badge-success' : 'badge-secondary'}`}>
-                      {user.status === 'active' ? 'Ativo' : 'Inativo'}
+                    <span className={`badge ${user.isActive ? 'badge-success' : 'badge-secondary'}`}>
+                      {user.isActive ? 'Ativo' : 'Inativo'}
                     </span>
                   </td>
                   <td>
                     <button
-                      className={`btn btn-sm ${user.status === 'active' ? 'btn-danger' : 'btn-success'}`}
-                      onClick={() => handleStatusChange(user.id, user.status === 'active' ? 'inactive' : 'active')}
+                      className={`btn btn-sm ${user.isActive ? 'btn-danger' : 'btn-success'}`}
+                      onClick={() => handleStatusChange(user.id, !user.isActive)}
                     >
-                      {user.status === 'active' ? 'Desativar' : 'Ativar'}
+                      {user.isActive ? 'Desativar' : 'Ativar'}
                     </button>
+                    <span className="ml-2 badge badge-info">
+                      ⭐ {user.averageRating.toFixed(1)}
+                    </span>
                   </td>
                 </tr>
               ))}
